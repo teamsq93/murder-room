@@ -1,0 +1,2 @@
+[functions.interrogate]
+verify_jwt = false
