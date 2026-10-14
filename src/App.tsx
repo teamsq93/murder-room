@@ -13,6 +13,7 @@ import {
   judge,
   notesFor,
   suspectMood,
+  cluePresentation,
   type Mood,
   type Choice,
   type ClueId,
@@ -29,6 +30,7 @@ import {
   subscribeRoom,
 } from "./roomSync";
 import { setLang, speak as localize, tr, tx, useLang } from "./locale";
+import { culpritOf, rollCulprit, setCulprit, type CulpritId } from "./solution";
 import { answerSuspect } from "./voice";
 import {
   applyPatch,
@@ -105,6 +107,8 @@ function App() {
   const [roomId, setRoomId] = useState<string | null>(null);
   const [mode, setMode] = useState<"manor" | "suspects">("manor");
   const [busy, setBusy] = useState(false);
+  const [culprit, setCulpritState] = useState<CulpritId>("thomas");
+  setCulprit(culprit);
   const multiplayer = isSupabaseConfigured();
   const snapshotRef = useRef<SharedCase>(emptyCase([]));
   const versionRef = useRef(0);
@@ -131,6 +135,9 @@ function App() {
   const displayName = playerName.trim() || "Du";
 
   function hydrate(next: SharedCase) {
+    const night = culpritOf(next);
+    setCulprit(night);
+    setCulpritState(night);
     snapshotRef.current = next;
     setClues(next.clues);
     setFlags(next.flags);
@@ -242,6 +249,9 @@ function App() {
   }
 
   function enterRoom(code: string) {
+    const night = rollCulprit();
+    setCulprit(night);
+    setCulpritState(night);
     setRoomCode(code);
     roomCodeRef.current = code;
     setPlayers([
@@ -356,7 +366,13 @@ function App() {
   }
 
   function replayCase() {
+    setRoomId(null);
+    setMode("manor");
+    setSelectedSuspect(null);
     if (!multiplayer) {
+      const night = rollCulprit(culprit);
+      setCulprit(night);
+      setCulpritState(night);
       clearCase();
       setScreen("game");
       return;
@@ -512,7 +528,10 @@ function App() {
   const privateClues = CLUES.filter((clue) => (pocket?.clues ?? []).includes(clue.id) && !clues.includes(clue.id));
   const sharedNotes = notesFor({ clues, flags, used });
   const reasonChoices: CaseReason[] = [
-    ...CLUES.filter((clue) => clues.includes(clue.id)).map((clue) => ({ title: clue.name, text: clue.detail })),
+    ...CLUES.filter((clue) => clues.includes(clue.id)).map((clue) => {
+      const face = cluePresentation(clue);
+      return { title: face.name, text: face.detail };
+    }),
     ...sharedNotes.map((note) => ({ title: note.title, text: note.text })),
   ];
   const known = { clues: seenClues, flags: seenFlags, used: seenUsed };
@@ -605,6 +624,12 @@ function App() {
                 "WORK WITH FRIENDS · FOLLOW THE CLUES · UNCOVER THE TRUTH",
               )}
             </p>
+            <p className="fine-print">
+              {tx(
+                "EN NY OMGÅNG KAN HA EN ANNAN GÄRNINGSPERSON.",
+                "A NEW ROUND CAN HAVE A DIFFERENT CULPRIT.",
+              )}
+            </p>
           </div>
           <div className="hero-caption">
             <span>BLACKWOOD MANOR</span>
@@ -654,8 +679,8 @@ function App() {
             <strong>{tx("FALL 001 — DÖDEN PÅ BLACKWOOD MANOR", "CASE 001 — DEATH AT BLACKWOOD MANOR")}</strong>
             <p>
               {tx(
-                "Ett misstänkt dödsfall har inträffat under en privat middag. Ni har en natt på er att finna sanningen. Samma fall kan sluta på olika sätt beroende på vad ni frågar, och i vilken ton.",
-                "A suspicious death has occurred during a private dinner. You have one night to find the truth. The same case can end in different ways depending on what you ask, and in what tone.",
+                "Ett misstänkt dödsfall har inträffat under en privat middag. Ni har en natt på er att finna sanningen. Samma fall kan sluta på olika sätt beroende på vad ni frågar, och i vilken ton. Varje gång ni börjar om dras en ny gärningsperson, och bevisen följer den natten.",
+                "A suspicious death has occurred during a private dinner. You have one night to find the truth. The same case can end in different ways depending on what you ask, and in what tone. Each time you start again, a new culprit is drawn, and the clues follow that night.",
               )}
             </p>
           </div>
@@ -700,8 +725,8 @@ function App() {
           </div>
           <p className="fine-print">
             {tx(
-              "EN ANNAN TON, ETT ANNAT VITTNE, EN ANNAN ANKLAGELSE — FALLET SVARAR ANNORLUNDA.",
-              "ANOTHER TONE, ANOTHER WITNESS, ANOTHER ACCUSATION — THE CASE ANSWERS DIFFERENTLY.",
+              "SPELA IGEN DRAR EN NY GÄRNINGSPERSON. BEVISEN FÖLJER DEN NATTEN.",
+              "PLAY AGAIN DRAWS A NEW CULPRIT. THE CLUES FOLLOW THAT NIGHT.",
             )}
           </p>
         </section>
@@ -865,13 +890,16 @@ function App() {
                   )}
                 </p>
                 <div className="notebook-list">
-                  {privateClues.map((clue) => (
+                  {privateClues.map((clue) => {
+                    const face = cluePresentation(clue);
+                    return (
                     <article key={clue.id} className="notebook-item">
                       <span className="label">{tx("BEVIS", "EVIDENCE")}</span>
-                      <strong>{tr(clue.name)}</strong>
-                      <p>{tr(clue.detail)}</p>
+                      <strong>{tr(face.name)}</strong>
+                      <p>{tr(face.detail)}</p>
                     </article>
-                  ))}
+                    );
+                  })}
                   {privateNotes.map((note) => (
                     <article key={note.flag} className="notebook-item">
                       <span className="label">{note.flag.startsWith("scene-") ? tx("HUSET", "THE HOUSE") : tx("FÖRHÖR", "INTERVIEW")}</span>
@@ -907,13 +935,16 @@ function App() {
             ) : (
               <>
                 <div className="notebook-list">
-                  {CLUES.filter((clue) => clues.includes(clue.id)).map((clue) => (
+                  {CLUES.filter((clue) => clues.includes(clue.id)).map((clue) => {
+                    const face = cluePresentation(clue);
+                    return (
                     <article key={clue.id} className="notebook-item">
                       <span className="label">{tx("BEVIS", "EVIDENCE")}</span>
-                      <strong>{tr(clue.name)}</strong>
-                      <p>{tr(clue.detail)}</p>
+                      <strong>{tr(face.name)}</strong>
+                      <p>{tr(face.detail)}</p>
                     </article>
-                  ))}
+                    );
+                  })}
                   {sharedNotes.map((note) => (
                     <article key={note.flag} className="notebook-item">
                       <span className="label">{note.flag.startsWith("scene-") ? tx("HUSET", "THE HOUSE") : tx("FÖRHÖR", "INTERVIEW")}</span>

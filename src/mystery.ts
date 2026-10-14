@@ -1,4 +1,15 @@
 import { tr } from "./locale";
+import {
+  clueDetail,
+  nightChoices,
+  nightClashes,
+  nightJudge,
+  nightNotes,
+  nightPath,
+  nightRooms,
+  nightTimeline,
+} from "./nights";
+import { getCulprit } from "./solution";
 
 export type ClueId = "clock" | "letter" | "glass";
 export type SuspectId = "victoria" | "edward" | "clara" | "thomas";
@@ -76,7 +87,7 @@ export const SUSPECTS: Suspect[] = [
     id: "victoria",
     name: "Victoria Blackwood",
     role: "Herrgårdens ägare",
-    detail: "Hade en konflikt med offret samma kväll.",
+    detail: "Offrets syster. Hon var kvar i huset den kvällen.",
     initials: "VB",
     image: "/suspects/victoria.jpg",
   },
@@ -84,7 +95,7 @@ export const SUSPECTS: Suspect[] = [
     id: "edward",
     name: "Edward Hayes",
     role: "Familjens advokat",
-    detail: "Ett viktigt dokument har försvunnit.",
+    detail: "Familjens advokat. Han hade hand om papperen.",
     initials: "EH",
     image: "/suspects/edward.jpg",
   },
@@ -92,7 +103,7 @@ export const SUSPECTS: Suspect[] = [
     id: "clara",
     name: "Clara Whitmore",
     role: "Hushållerskan",
-    detail: "Var den sista som såg offret vid liv.",
+    detail: "Hushållerskan. Hon serverade middagen.",
     initials: "CW",
     image: "/suspects/clara.jpg",
   },
@@ -100,7 +111,7 @@ export const SUSPECTS: Suspect[] = [
     id: "thomas",
     name: "Thomas Reed",
     role: "Affärspartner",
-    detail: "Offret hade upptäckt ekonomiska oegentligheter.",
+    detail: "Offrets affärspartner. Han stannade efter middagen.",
     initials: "TR",
     image: "/suspects/thomas.jpg",
   },
@@ -179,7 +190,12 @@ export function address(name: string) {
   return trimmed;
 }
 
+export function cluePresentation(clue: Clue) {
+  return { name: clue.name, detail: clueDetail(clue.id, clue.detail) };
+}
+
 export function notesFor(state: InquiryState) {
+  if (getCulprit() !== "thomas") return nightNotes(getCulprit(), state);
   return NOTES.filter((note) => state.flags.includes(note.flag));
 }
 
@@ -216,6 +232,7 @@ export type TimelineSlot = {
 };
 
 export function eveningTimeline(state: InquiryState): TimelineSlot[] {
+  if (getCulprit() !== "thomas") return nightTimeline(getCulprit(), state);
   const dinner: string[] = [];
   if (has(state, "v-will")) dinner.push("Victoria och Alistair grälar om testamentet.");
   else if (has(state, "v-alibi")) dinner.push("Victoria går ut efter ett gräl.");
@@ -268,6 +285,7 @@ export function eveningTimeline(state: InquiryState): TimelineSlot[] {
 }
 
 export function timelineClashes(state: InquiryState) {
+  if (getCulprit() !== "thomas") return nightClashes(getCulprit(), state);
   const lines: string[] = [];
   if (has(state, "v-heard-glass") && clue(state, "clock")) {
     lines.push("21:30 och 22:15 går inte ihop.");
@@ -279,6 +297,7 @@ export function timelineClashes(state: InquiryState) {
 }
 
 export function pathSummary(state: InquiryState) {
+  if (getCulprit() !== "thomas") return nightPath(getCulprit(), state);
   const parts: string[] = [];
   if (has(state, "t-wary")) parts.push("Du bluffade Reed, och han genomskådade det");
   if (has(state, "scene-kitchen-cork") && has(state, "c-wine-fresh")) {
@@ -981,6 +1000,7 @@ export const CHOICES: Choice[] = [
 ];
 
 export function availableChoices(suspectId: SuspectId, state: InquiryState) {
+  if (getCulprit() !== "thomas") return nightChoices(getCulprit(), suspectId, state);
   return CHOICES.filter((choice) => choice.suspectId === suspectId && choice.available(state));
 }
 
@@ -996,6 +1016,7 @@ const HOUSE_LEADS: { suspectId: SuspectId; flag: string; stageId: string; room: 
 ];
 
 export function roomsThatOpenQuestions(suspectId: SuspectId, state: InquiryState, examined: string[]) {
+  if (getCulprit() !== "thomas") return nightRooms(getCulprit(), suspectId, state, examined);
   const open = availableChoices(suspectId, state).length;
   const rooms: string[] = [];
   for (const lead of HOUSE_LEADS) {
@@ -1011,6 +1032,7 @@ function knewReed(state: InquiryState) {
 }
 
 export function judge(target: VerdictTarget, state: InquiryState, name: string): Verdict {
+  if (getCulprit() !== "thomas") return nightJudge(getCulprit(), target, state, name);
   const who = address(name);
   const path = pathSummary(state);
   const chain =

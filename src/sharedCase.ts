@@ -1,4 +1,5 @@
 import type { ClueId, SuspectId, VerdictTarget } from "./mystery";
+import { culpritOf, rollCulprit, type CulpritId } from "./solution";
 
 export type Seat = {
   id: string;
@@ -49,6 +50,7 @@ export type Pocket = {
 
 export type SharedCase = {
   phase: "lobby" | "game";
+  culprit?: CulpritId;
   players: Seat[];
   clues: ClueId[];
   flags: string[];
@@ -82,9 +84,10 @@ export type Patch =
   | { type: "place"; playerId: string; spot: string }
   | { type: "replay" };
 
-export function emptyCase(players: Seat[]): SharedCase {
+export function emptyCase(players: Seat[], culprit: CulpritId = rollCulprit()): SharedCase {
   return {
     phase: "lobby",
+    culprit,
     players,
     clues: [],
     flags: [],
@@ -247,7 +250,7 @@ export function applyPatch(state: SharedCase, patch: Patch): SharedCase {
     }
     case "replay":
       return {
-        ...emptyCase(state.players),
+        ...emptyCase(state.players, rollCulprit(culpritOf(state))),
         phase: "game",
       };
     default:

@@ -1,5 +1,6 @@
-import { ROOMS, roomProgress, type Stage } from "./manor";
 import { tr, tx } from "./locale";
+import { ROOMS, roomProgress, type Stage } from "./manor";
+import { stageCopy } from "./nights";
 
 type ManorViewProps = {
   examined: string[];
@@ -116,7 +117,7 @@ export function ManorView({ examined, roomId, company, onEnter, onLeave, onExami
               {revealed.length === 0 && <p>{tr(object.hint)}</p>}
               {revealed.map((stage) => (
                 <p key={stage.id} className="clue-detail">
-                  {tr(stage.text)}
+                  {tr(stageCopy(stage.id, stage.text))}
                 </p>
               ))}
               <span className="evidence-action">{next ? `${tr(next.action)} →` : tx("✓ UNDERSÖKT", "✓ EXAMINED")}</span>

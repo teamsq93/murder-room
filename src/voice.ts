@@ -1,3 +1,6 @@
+import { nightVoice } from "./nights";
+import { getCulprit } from "./solution";
+
 export type VoiceSuspect = "victoria" | "edward" | "clara" | "thomas";
 
 export type VoiceLine = {
@@ -85,6 +88,7 @@ export function answerSuspect(input: VoiceInput) {
   const you = address(input.name);
   const repeated = priorAnswer(input, question);
   if (repeated) return repeated;
+  if (getCulprit() !== "thomas") return nightVoice({ ...input, question });
   if (input.suspectId === "victoria") return victoria(input, question, you);
   if (input.suspectId === "edward") return edward(input, question, you);
   if (input.suspectId === "clara") return clara(input, question, you);

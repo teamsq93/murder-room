@@ -50,28 +50,51 @@ export function tx(sv: string, en: string) {
   return lang === "en" ? en : sv;
 }
 
-export function tr(text: string) {
-  if (lang !== "en" || !text) return text;
-  return EN[text] ?? text;
+const extra: Record<string, string> = {};
+let templateCache: { value: string; pattern: RegExp }[] | null = null;
+
+export function addTranslations(lines: Record<string, string>) {
+  let changed = false;
+  for (const [key, value] of Object.entries(lines)) {
+    if (extra[key] !== value) {
+      extra[key] = value;
+      changed = true;
+    }
+  }
+  if (changed) templateCache = null;
+}
+
+function lookup(text: string) {
+  if (Object.prototype.hasOwnProperty.call(extra, text)) return extra[text];
+  return EN[text];
 }
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-const templates = Object.entries(EN)
-  .filter(([key]) => key.includes("{n}"))
-  .sort((a, b) => b[0].length - a[0].length)
-  .map(([key, value]) => ({
-    value,
-    pattern: new RegExp(`^${key.split("{n}").map(escapeRegExp).join("(.+?)")}$`),
-  }));
+function compiledTemplates() {
+  if (templateCache) return templateCache;
+  templateCache = Object.entries({ ...EN, ...extra })
+    .filter(([key]) => key.includes("{n}"))
+    .sort((a, b) => b[0].length - a[0].length)
+    .map(([key, value]) => ({
+      value,
+      pattern: new RegExp(`^${key.split("{n}").map(escapeRegExp).join("(.+?)")}$`),
+    }));
+  return templateCache;
+}
+
+export function tr(text: string) {
+  if (lang !== "en" || !text) return text;
+  return lookup(text) ?? text;
+}
 
 export function speak(text: string) {
   if (lang !== "en" || !text) return text;
-  const exact = EN[text];
+  const exact = lookup(text);
   if (exact) return exact;
-  for (const template of templates) {
+  for (const template of compiledTemplates()) {
     const match = template.pattern.exec(text);
     if (!match) continue;
     const parts = template.value.split("{n}");

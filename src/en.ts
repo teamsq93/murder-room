@@ -144,13 +144,13 @@ export const EN: Record<string, string> = {
     "A single glass, with a bitter film at the bottom. On the foot is a fresh ink streak, as from a hand that had just held a pen.",
 
   "Herrgårdens ägare": "Owner of the manor",
-  "Hade en konflikt med offret samma kväll.": "Had a quarrel with the victim that same evening.",
+  "Offrets syster. Hon var kvar i huset den kvällen.": "The victim's sister. She was still in the house that evening.",
   "Familjens advokat": "The family lawyer",
-  "Ett viktigt dokument har försvunnit.": "An important document has disappeared.",
+  "Familjens advokat. Han hade hand om papperen.": "The family lawyer. He kept the papers.",
   Hushållerskan: "The housekeeper",
-  "Var den sista som såg offret vid liv.": "Was the last to see the victim alive.",
+  "Hushållerskan. Hon serverade middagen.": "The housekeeper. She served dinner.",
   Affärspartner: "Business partner",
-  "Offret hade upptäckt ekonomiska oegentligheter.": "The victim had discovered financial irregularities.",
+  "Offrets affärspartner. Han stannade efter middagen.": "The victim's business partner. He stayed after dinner.",
 
   Testamentet: "The will",
   "Säger att hon var i trädgården efter grälet.": "Says she was in the garden after the quarrel.",
